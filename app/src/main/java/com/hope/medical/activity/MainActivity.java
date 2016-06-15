@@ -35,7 +35,11 @@ import com.hope.medical.widget.ProgressWebView;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+
+import me.nereo.multi_image_selector.MultiImageSelector;
+import me.nereo.multi_image_selector.MultiImageSelectorActivity;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -47,9 +51,14 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout fourLinearLayout;
     private LoadFragment loadFragment = null;
     private ProgressWebView webView;
+    private static final int REQUEST_IMAGE = 2;
+
     public static final int FILECHOOSER_RESULTCODE = 1;
     private ValueCallback mUploadMessage;
     private String mCameraPhotoPath;
+
+    private ArrayList<String> mSelectPath;
+
 
     public static final String TAG = MainActivity.class.getSimpleName();
 
@@ -67,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
         webView.getSettings().setJavaScriptEnabled(true);
         setUpWebViewDefaults(webView);
         webView.addJavascriptInterface(webAppInterface, "Android");
-        webView.loadUrl("http://cwcpf.mhunsha.com");
+        webView.loadUrl("http://cwcpf.mhunsha.com/index.php/home/");
         webView.setWebChromeClient(new WebChromeClient() {
 
             @Override
@@ -84,35 +93,28 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+
+
             // For Android 3.0+
             public void openFileChooser(ValueCallback uploadMsg) {
 
                 mUploadMessage = uploadMsg;
-                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
-                i.addCategory(Intent.CATEGORY_OPENABLE);
-                i.setType("image/*");
-                MainActivity.this.startActivityForResult(Intent.createChooser(i, "File Chooser"), FILECHOOSER_RESULTCODE);
-
+                MultiImageSelector.create(MainActivity.this).single()
+                          .start(MainActivity.this, REQUEST_IMAGE);
             }
 
             // For Android 3.0+
             public void openFileChooser(ValueCallback uploadMsg, String acceptType) {
                 mUploadMessage = uploadMsg;
-                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
-                i.addCategory(Intent.CATEGORY_OPENABLE);
-                i.setType("*/*");
-                MainActivity.this.startActivityForResult(
-                          Intent.createChooser(i, "File Browser"),
-                          FILECHOOSER_RESULTCODE);
+                MultiImageSelector.create(MainActivity.this).single()
+                          .start(MainActivity.this, REQUEST_IMAGE);
             }
 
             //For Android 4.1
             public void openFileChooser(ValueCallback uploadMsg, String acceptType, String capture) {
                 mUploadMessage = uploadMsg;
-                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
-                i.addCategory(Intent.CATEGORY_OPENABLE);
-                i.setType("image/*");
-                MainActivity.this.startActivityForResult(Intent.createChooser(i, "File Chooser"), MainActivity.FILECHOOSER_RESULTCODE);
+                MultiImageSelector.create(MainActivity.this).single()
+                          .start(MainActivity.this, REQUEST_IMAGE);
 
             }
 
@@ -127,56 +129,14 @@ public class MainActivity extends AppCompatActivity {
                 }
                 mUploadMessage = filePathCallback;
 
-                // Set up the take picture intent
-                Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                if (takePictureIntent.resolveActivity(MainActivity.this.getPackageManager()) != null) {
-                    // Create the File where the photo should go
-                    File photoFile = null;
-                    try {
-                        photoFile = createImageFile();
-                        takePictureIntent.putExtra("PhotoPath", mCameraPhotoPath);
-                    } catch (IOException ex) {
-                        // Error occurred while creating the File
-                        Log.e(TAG, "Unable to create Image File", ex);
-                    }
-
-                    // Continue only if the File was successfully created
-                    if (photoFile != null) {
-                        mCameraPhotoPath = "file:" +photoFile.getAbsolutePath();
-                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
-                                  Uri.fromFile(photoFile));
-                    } else {
-                        takePictureIntent = null;
-                    }
-                }
-
-                // Set up the intent to get an existing image
-                Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
-                contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
-                contentSelectionIntent.setType("image/*");
-
-                // Set up the intents for the Intent chooser
-                Intent[] intentArray;
-                if(takePictureIntent != null) {
-                    intentArray = new Intent[]{takePictureIntent};
-                } else {
-                    intentArray = new Intent[0];
-                }
-
-                Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
-                chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
-                chooserIntent.putExtra(Intent.EXTRA_TITLE, "Image Chooser");
-                chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
-
-                startActivityForResult(chooserIntent, FILECHOOSER_RESULTCODE);
+               MultiImageSelector.create(MainActivity.this).single()
+                         .start(MainActivity.this, REQUEST_IMAGE);
 
                 return true;
             }
 
 
         });
-      //  webView.loadUrl("file:///android_asset/haha.html");
-        //initView();
 
     }
 
@@ -184,24 +144,26 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode,
                                     Intent intent) {
-        if (requestCode == FILECHOOSER_RESULTCODE) {
+        if (requestCode == REQUEST_IMAGE) {
             if (null == mUploadMessage) return;
-            Uri result = intent == null || resultCode != RESULT_OK ? null
-                      : intent.getData();
-            String path =  FileUtils.getPath(this, result);
-            if (TextUtils.isEmpty(path)) {
-                mUploadMessage.onReceiveValue(null);
-                mUploadMessage = null;
-                return;
-            }
-            Uri uri = Uri.fromFile(new File(path));
-            Log.i("UPFILE", "onActivityResult after parser uri:" + uri.toString());
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                mUploadMessage.onReceiveValue(new Uri[]{uri});
-            } else {
-                mUploadMessage.onReceiveValue(uri);
-            }
+            if (resultCode == RESULT_OK) {
+                mSelectPath = intent.getStringArrayListExtra(MultiImageSelector.EXTRA_RESULT);
+                if (TextUtils.isEmpty(mSelectPath.get(0))) {
+                    mUploadMessage.onReceiveValue(null);
+                    mUploadMessage = null;
+                    return;
+                }
 
+                Uri uri = Uri.fromFile(new File(mSelectPath.get(0)));
+                Log.i("UPFILE", "onActivityResult after parser uri:" + uri.toString());
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    mUploadMessage.onReceiveValue(new Uri[]{uri});
+                } else {
+                    mUploadMessage.onReceiveValue(uri);
+                }
+            } else {
+                mUploadMessage.onReceiveValue(null);
+            }
             mUploadMessage = null;
         }
     }
