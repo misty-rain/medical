@@ -6,10 +6,9 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Message;
-import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
+
+
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -21,25 +20,29 @@ import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.widget.AbsoluteLayout;
 import android.widget.LinearLayout;
 
 import com.hope.medical.R;
-import com.hope.medical.fragment.MessageFragment;
-import com.hope.medical.fragment.NoticeFragment;
-import com.hope.medical.utils.FileUtils;
 import com.hope.medical.web.WebAppInterface;
 import com.hope.medical.widget.LoadFragment;
 import com.hope.medical.widget.ProgressWebView;
+import com.mistyrian.library.event.BaseReceiveEvent;
+import com.zhy.http.okhttp.OkHttpUtils;
+import com.zhy.http.okhttp.callback.StringCallback;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import me.nereo.multi_image_selector.MultiImageSelector;
-import me.nereo.multi_image_selector.MultiImageSelectorActivity;
+
 
 
 public class MainActivity extends AppCompatActivity {
@@ -58,6 +61,8 @@ public class MainActivity extends AppCompatActivity {
     private String mCameraPhotoPath;
 
     private ArrayList<String> mSelectPath;
+    EventBus eventBus  = EventBus.getDefault();
+
 
 
     public static final String TAG = MainActivity.class.getSimpleName();
@@ -67,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         getSupportActionBar().hide();
         setContentView(R.layout.index);
+        eventBus.register(this);
         //透明状态栏
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         //透明导航栏
@@ -249,6 +255,26 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+
+    /**
+     * 根据eventbus post的事件作出相应处理
+     *
+     * @param revEvent 返回事件
+     */
+    @Subscribe
+    public void onEventMainThread(BaseReceiveEvent revEvent) {
+        if (revEvent.getFlag() == BaseReceiveEvent.Flag_Success) {
+            String url = "http://cwcpf.mhunsha.com/home/index/newbinddoctor";
+            Map<String, String> params = new HashMap<String, String>();
+            params.put("uid", "121212121");
+            params.put("did", "3242342");
+
+
+
+        }
+
+    }
+
 
 
 }

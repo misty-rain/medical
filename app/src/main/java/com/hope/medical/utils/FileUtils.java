@@ -128,6 +128,7 @@ public class FileUtils {
                 final String selection = "_id=?";
                 final String[] selectionArgs = new String[] {
                           split[1]
+
                 };
 
                 return getDataColumn(context, contentUri, selection, selectionArgs);
