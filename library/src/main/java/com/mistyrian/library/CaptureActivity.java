@@ -43,9 +43,12 @@ import android.widget.Toast;
 
 import com.mistyrian.library.camera.CameraManager;
 import com.mistyrian.library.decode.DecodeUtils;
+import com.mistyrian.library.event.BaseReceiveEvent;
 import com.mistyrian.library.utils.BeepManager;
 import com.mistyrian.library.utils.CommonUtils;
 import com.mistyrian.library.utils.InactivityTimer;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.io.IOException;
 
@@ -89,6 +92,7 @@ public class CaptureActivity extends AppCompatActivity implements SurfaceHolder.
 
     private Rect cropRect;
     private int dataMode = DecodeUtils.DECODE_DATA_MODE_QRCODE;
+    EventBus eventBus = EventBus.getDefault();
 
 
     @Override
@@ -364,12 +368,16 @@ public class CaptureActivity extends AppCompatActivity implements SurfaceHolder.
             intent.setData(Uri.parse(result));
             startActivity(intent);
         } else {
-            bundle.putString(ResultActivity.BUNDLE_KEY_SCAN_RESULT, result);
+
+           /* bundle.putString(ResultActivity.BUNDLE_KEY_SCAN_RESULT, result);
             Intent intent = new Intent(this, ResultActivity.class);
             if (null != bundle) {
                 intent.putExtras(bundle);
             }
-            startActivity(intent);
+            startActivity(intent);*/
+            eventBus.post(new BaseReceiveEvent(BaseReceiveEvent.Flag_Success,"test"));
+            finish();
+
            // readyGo(ResultActivity.class, bundle);
         }
     }
